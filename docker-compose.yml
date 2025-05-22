@@ -1,0 +1,212 @@
+version: '3.8'  # Define a versão da especificação do Docker Compose
+
+services:
+  # ======================
+  # Bancos de Dados
+  # ======================
+
+  postgres:  # Instância principal do PostgreSQL
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"  # Porta padrão do PostgreSQL
+    environment:
+      POSTGRES_PASSWORD: example
+    networks:
+      - backend
+
+  mysql:  # Banco MySQL
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+    networks:
+      - backend
+
+  mongodb:  # Banco MongoDB
+    image: mongo:6
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    networks:
+      - backend
+
+  redis:  # Banco Redis (chave-valor em memória)
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  cassandra:  # Banco Cassandra (NoSQL distribuído)
+    image: cassandra:4
+    container_name: cassandra
+    restart: always
+    ports:
+      - "9042:9042"
+    networks:
+      - backend
+
+  influxdb:  # Banco InfluxDB (séries temporais)
+    image: influxdb:2
+    container_name: influxdb
+    restart: always
+    ports:
+      - "8086:8086"
+    networks:
+      - backend
+
+  elasticsearch:  # Elasticsearch para indexação/buscas
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.2
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node  # Configuração de nó único
+      - xpack.security.enabled=false  # Desativa autenticação
+    ports:
+      - "9200:9200"
+    networks:
+      - backend
+
+  timescaledb:  # TimescaleDB (extensão do PostgreSQL para séries temporais)
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescaledb
+    restart: always
+    ports:
+      - "5433:5432"  # Mapeia local 5433 → interno 5432
+    environment:
+      POSTGRES_PASSWORD: example
+    networks:
+      - backend
+
+  # ======================
+  # Exporters para Prometheus
+  # ======================
+
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:example@postgres:5432/postgres?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres  # Espera o PostgreSQL estar pronto
+    networks:
+      - backend
+
+  mysql_exporter:
+    image: prometheus/mysqld-exporter
+    environment:
+      DATA_SOURCE_NAME: "root:example@(mysql:3306)/"
+    ports:
+      - "9104:9104"
+    depends_on:
+      - mysql
+    networks:
+      - backend
+
+  redis_exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  mongodb_exporter:
+    image: bitnami/mongodb-exporter:latest
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+    ports:
+      - "9216:9216"
+    depends_on:
+      - mongodb
+    networks:
+      - backend
+
+  cassandra_exporter:
+    image: criteord/cassandra_exporter
+    ports:
+      - "8080:8080"
+    depends_on:
+      - cassandra
+    networks:
+      - backend
+
+  elasticsearch_exporter:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter
+    ports:
+      - "9114:9114"
+    environment:
+      - ES_URI=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - backend
+
+  # ======================
+  # Monitoramento
+  # ======================
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml  # Configuração externa
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"  # Interface web do Grafana
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning  # Dashboards e datasources pré-definidos
+    networks:
+      - backend
+
+  # ======================
+  # Balanceadores de carga
+  # ======================
+
+  nginx:  # Nginx simples como proxy reverso
+    image: nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - backend
+
+  haproxy:  # HAProxy como balanceador de carga avançado
+    image: haproxy:2.9
+    container_name: haproxy
+    restart: always
+    ports:
+      - "8888:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - backend
+
+# ======================
+# Rede interna compartilhada
+# ======================
+networks:
+  backend:
+    driver: bridge  # Rede Docker interna para comunicação entre containers

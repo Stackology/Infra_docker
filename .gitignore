@@ -1,0 +1,61 @@
+# Docker volumes e dados persistentes
+**/data/
+**/volumes/
+**/tmp/
+**/logs/
+
+# Arquivos de banco de dados e dumps
+*.sql
+*.dump
+
+# Configurações locais sensíveis
+.env
+*.env
+
+# Backups e arquivos de estado
+*.bak
+*.swp
+*.swo
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Arquivos do editor
+*.vscode/
+*.idea/
+*.code-workspace
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+
+# Vagrant
+.vagrant/
+
+# Logs
+*.log
+*.out
+*.err
+
+# Node 
+node_modules/
+
+# Python 
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Prometheus e Grafana volumes 
+prometheus/data/
+grafana/data/
+
+# Nginx e HAProxy temporários
+nginx/*.pid
+haproxy/*.sock
